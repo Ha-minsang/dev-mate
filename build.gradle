@@ -1,7 +1,7 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '4.0.5'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
+    id 'org.springframework.boot' version '4.0.3'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'io.github.Ha-minsang'
@@ -9,36 +9,47 @@ version = '0.0.1-SNAPSHOT'
 description = 'dev-mate'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
-	}
-}
-
-configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-batch'
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
-	compileOnly 'org.projectlombok:lombok'
-	runtimeOnly 'com.mysql:mysql-connector-j'
-	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-batch-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-data-redis-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    // Spring
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
+
+    // DB
+    runtimeOnly 'com.mysql:mysql-connector-j'
+
+    // notification-engine
+    implementation 'com.github.Ha-minsang.notification-engine:engine-core:v1.0.3'
+    implementation 'com.github.Ha-minsang.notification-engine:engine-sse:v1.0.3'
+    implementation 'com.github.Ha-minsang.notification-engine:engine-email:v1.0.3'
+    implementation 'com.github.Ha-minsang.notification-engine:engine-slack:v1.0.3'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // Test
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.batch:spring-batch-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
 }
