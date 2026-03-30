@@ -34,4 +34,17 @@ public class ServerTarget {
     void prePersist() {
         this.createdAt = LocalDateTime.now();
     }
+
+    public static ServerTarget create(String name, String url, String managerEmail) {
+        ServerTarget target = new ServerTarget();
+        target.name = name;
+        target.url = url;
+        target.managerEmail = managerEmail;
+        target.active = true;
+        return target;
+    }
+
+    public void toggleActive() {
+        this.active = !this.active;
+    }
 }
