@@ -47,3 +47,5 @@ Thumbs.db
 ### Spring Boot ###
 application-local.yml
 application-local.properties
+
+.env
