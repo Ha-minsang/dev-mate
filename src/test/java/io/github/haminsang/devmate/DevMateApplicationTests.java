@@ -6,15 +6,14 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@ActiveProfiles("test")
 @SpringBootTest
+@ActiveProfiles("test")
 class DevMateApplicationTests {
 
     @MockitoBean
     JavaMailSender javaMailSender;
 
-	@Test
-	void contextLoads() {
-	}
-
+    @Test
+    void contextLoads() {
+    }
 }

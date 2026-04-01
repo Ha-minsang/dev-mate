@@ -30,7 +30,6 @@ public class GithubWebhookService {
 
         // main 브랜치 push만 처리
         if (!branchName.equals("main")) {
-            log.info("main 브랜치 아님: {}", branchName);
             return;
         }
 

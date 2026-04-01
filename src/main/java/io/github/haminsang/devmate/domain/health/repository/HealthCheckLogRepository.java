@@ -10,4 +10,6 @@ public interface HealthCheckLogRepository extends JpaRepository<HealthCheckLog, 
 
     // 서버별 최근 이력 조회
     List<HealthCheckLog> findTop10ByServerTargetOrderByCheckedAtDesc(ServerTarget serverTarget);
+
+    long countBySuccessFalse();
 }
