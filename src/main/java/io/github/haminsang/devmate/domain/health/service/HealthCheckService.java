@@ -4,8 +4,14 @@ import io.github.haminsang.devmate.domain.health.entity.HealthCheckLog;
 import io.github.haminsang.devmate.domain.health.entity.ServerTarget;
 import io.github.haminsang.devmate.domain.health.repository.HealthCheckLogRepository;
 import io.github.haminsang.devmate.domain.health.repository.ServerTargetRepository;
+import io.github.haminsang.devmate.domain.notification.service.NotificationLogService;
+import io.github.haminsang.notification.channel.NotificationChannel;
+import io.github.haminsang.notification.channel.NotificationPayload;
+import io.github.haminsang.notification.channel.NotificationRequest;
+import io.github.haminsang.notification.core.NotificationEngine;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -18,13 +24,22 @@ public class HealthCheckService {
 
     private final ServerTargetRepository serverTargetRepository;
     private final HealthCheckLogRepository healthCheckLogRepository;
+    private final NotificationEngine notificationEngine;
+    private final NotificationLogService notificationLogService;
     private final WebClient webClient;
+
+    @Value("${slack.webhook.url}")
+    private String slackWebhookUrl;
 
     public HealthCheckService(ServerTargetRepository serverTargetRepository,
                               HealthCheckLogRepository healthCheckLogRepository,
+                              NotificationEngine notificationEngine,
+                              NotificationLogService notificationLogService,
                               @Qualifier("webClient") WebClient webClient) {
         this.serverTargetRepository = serverTargetRepository;
         this.healthCheckLogRepository = healthCheckLogRepository;
+        this.notificationEngine = notificationEngine;
+        this.notificationLogService = notificationLogService;
         this.webClient = webClient;
     }
 
@@ -54,6 +69,10 @@ public class HealthCheckService {
                     .success(success)
                     .build();
 
+            if (!success) {
+                sendFailureAlert(target, "응답 코드: " + statusCode);
+            }
+
             return healthCheckLogRepository.save(checkLog);
 
         } catch (Exception e) {
@@ -67,7 +86,36 @@ public class HealthCheckService {
                     .errorMessage(e.getMessage())
                     .build();
 
+            sendFailureAlert(target, e.getMessage());
+
             return healthCheckLogRepository.save(failLog);
+        }
+    }
+
+    private void sendFailureAlert(ServerTarget target, String reason) {
+        NotificationPayload payload = NotificationPayload.builder()
+                .title("[DevMate] 서버 응답 실패 - " + target.getName())
+                .body("URL: " + target.getUrl() + "\n원인: " + reason)
+                .build();
+
+        // 슬랙 알림
+        NotificationRequest slackRequest = NotificationRequest.builder()
+                .targetId(slackWebhookUrl)
+                .channel(NotificationChannel.SLACK)
+                .payload(payload)
+                .build();
+        notificationEngine.send(slackRequest)
+                .thenAccept(result -> notificationLogService.save(slackRequest, result));
+
+        // 담당자 이메일 알림
+        if (target.getManagerEmail() != null && !target.getManagerEmail().isBlank()) {
+            NotificationRequest emailRequest = NotificationRequest.builder()
+                    .targetId(target.getManagerEmail())
+                    .channel(NotificationChannel.EMAIL)
+                    .payload(payload)
+                    .build();
+            notificationEngine.send(emailRequest)
+                    .thenAccept(result -> notificationLogService.save(emailRequest, result));
         }
     }
 }

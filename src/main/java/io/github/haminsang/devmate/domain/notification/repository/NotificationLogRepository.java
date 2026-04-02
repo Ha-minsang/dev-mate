@@ -9,11 +9,10 @@ import java.util.List;
 
 public interface NotificationLogRepository extends JpaRepository<NotificationLog, Long> {
 
-    // 채널별 최근 발송 이력 조회
-    List<NotificationLog> findTop10ByChannelOrderBySentAtDesc(NotificationChannel channel);
-
     // 성공 여부로 조회
     List<NotificationLog> findAllBySuccess(boolean success);
 
     long countBySentAtAfter(LocalDateTime sentAt);
+
+    List<NotificationLog> findTop50ByOrderBySentAtDesc();
 }
