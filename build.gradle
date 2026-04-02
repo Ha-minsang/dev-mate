@@ -27,6 +27,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'org.springframework.boot:spring-boot-starter-batch'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'me.paulschwarz:springboot4-dotenv:5.1.0'
 
     // DB
     runtimeOnly 'com.mysql:mysql-connector-j'
