@@ -1,5 +1,6 @@
 package io.github.haminsang.devmate;
 
+import io.github.haminsang.notification.sse.emitter.SseEmitterRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -12,6 +13,9 @@ class DevMateApplicationTests {
 
     @MockitoBean
     JavaMailSender javaMailSender;
+
+    @MockitoBean
+    SseEmitterRepository sseEmitterRepository;
 
     @Test
     void contextLoads() {
