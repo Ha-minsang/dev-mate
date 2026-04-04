@@ -7,6 +7,7 @@ services:
     ports:
       - "3307:3306"
     environment:
+      DB_URL: ${DB_URL}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
