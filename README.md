@@ -1,57 +1,86 @@
 # DevMate
 
-개발팀을 위한 서버 모니터링 및 업무 알림 플랫폼입니다.
-서버 헬스체크, PR 방치 알림, 배포 현황, 일일 리포트를 슬랙과 이메일로 자동 발송합니다.
+개발팀을 위한 서버 모니터링 및 업무 알림 플랫폼입니다.  
+서버 상태를 자동으로 감시하고, PR 방치 및 배포 현황을 슬랙과 이메일로 알려줍니다.
 
----
+<br>
 
 ## 주요 기능
 
-**서버 헬스체크**
-등록된 서버 URL을 1분마다 체크하여 응답 실패 시 슬랙과 이메일로 즉시 알림을 발송합니다.
+**서버 헬스체크**  
+등록된 서버 URL을 1분마다 자동으로 체크합니다.  
+응답 실패 시 담당자에게 슬랙과 이메일로 즉시 알림을 발송하고, 이력을 저장합니다.
 
-**PR 방치 알림**
-GitHub API를 통해 N시간 이상 리뷰가 없는 PR을 감지하고 매일 오전 9시에 슬랙으로 알림을 발송합니다.
+**PR 방치 알림**  
+GitHub API를 통해 N시간 이상 리뷰가 없는 PR을 감지합니다.  
+매일 오전 9시에 방치된 PR 목록을 슬랙으로 발송합니다.
 
-**배포 현황**
-GitHub Webhook으로 main 브랜치 push 이벤트를 수신하여 배포 이력을 저장하고 슬랙으로 알림을 발송합니다.
+**배포 현황**  
+GitHub Webhook으로 main 브랜치 push 이벤트를 수신합니다.  
+배포 이력을 저장하고 슬랙으로 알림을 발송합니다.
 
-**일일 리포트**
-매일 오전 9시에 열린 PR, 어제 머지된 PR, 헬스체크 실패 건수를 슬랙과 이메일로 발송합니다.
+**일일 리포트 (Spring Batch)**  
+매일 오전 9시에 배치 작업이 실행됩니다.  
+열린 PR 수, 어제 머지된 PR 수, 헬스체크 실패 건수를 집계해 슬랙과 이메일로 발송합니다.
 
-**모니터링 대시보드**
-서버 상태, 최근 배포 이력, 알림 발송 현황을 REST API로 제공합니다.
+**모니터링 대시보드 API**  
+서버 상태, 최근 배포 이력, 알림 발송 현황을 REST API로 제공합니다.  
+SSE 엔드포인트를 통해 실시간으로 데이터를 받아볼 수 있습니다.
 
----
+<br>
 
 ## 기술 스택
 
 | 구분 | 기술 |
 |---|---|
-| Backend | Spring Boot 4.0.3, Spring Batch, Spring Scheduler |
+| Backend | Spring Boot 4.0.3, Spring Batch 6, Spring Scheduler |
 | Database | MySQL 8.0, Redis 7 |
 | 알림 | [notification-engine](https://github.com/Ha-minsang/notification-engine) (SSE, Email, Slack) |
-| 외부 연동 | GitHub API, GitHub Webhook |
-| 인프라 | Docker, Docker Compose |
+| 외부 연동 | GitHub REST API, GitHub Webhook |
+| API 문서 | Swagger (springdoc-openapi) |
+| 인프라 | Docker, Docker Compose, AWS EC2 |
+| CI/CD | GitHub Actions |
 
----
+<br>
 
 ## 아키텍처
 
 ```
 GitHub API / Webhook
-        |
+        │
+        ▼
 Spring Scheduler / Batch
-        |
-    이벤트 감지
-        |
+  (이벤트 감지 및 집계)
+        │
+        ▼
 notification-engine
     ├── SSE   → 대시보드 실시간 업데이트
-    ├── Email → 담당자 이메일
+    ├── Email → 담당자 이메일 발송
     └── Slack → 팀 채널 알림
 ```
 
----
+알림 발송은 직접 개발한 [notification-engine](https://github.com/Ha-minsang/notification-engine) 라이브러리를 활용합니다.  
+SSE, 이메일, 슬랙을 단일 인터페이스로 처리합니다.
+
+<br>
+
+## CI/CD 흐름
+
+```
+main 브랜치 push
+        │
+        ▼
+GitHub Actions
+  1. Gradle 빌드
+  2. Docker 이미지 빌드
+  3. Docker Hub push
+        │
+        ▼
+EC2 자동 배포
+  docker compose pull & up
+```
+
+<br>
 
 ## 시작하기
 
@@ -70,6 +99,10 @@ MYSQL_ROOT_PASSWORD=루트비밀번호
 MYSQL_DATABASE=devmate
 MYSQL_USER=devmate
 MYSQL_PASSWORD=비밀번호
+DB_URL=jdbc:mysql://localhost:3307/devmate?serverTimezone=Asia/Seoul
+
+# Redis
+REDIS_HOST=localhost
 
 # GitHub
 GITHUB_TOKEN=깃허브토큰
@@ -94,7 +127,7 @@ docker-compose up -d
 ./gradlew bootRun
 ```
 
----
+<br>
 
 ## API 명세
 
@@ -103,8 +136,6 @@ docker-compose up -d
 ```
 http://localhost:8080/swagger-ui/index.html
 ```
-
-### 주요 엔드포인트
 
 | Method | URL | 설명 |
 |---|---|---|
@@ -119,20 +150,21 @@ http://localhost:8080/swagger-ui/index.html
 | GET | /api/deploys | 전체 배포 이력 조회 |
 | GET | /api/deploys/{repoName} | 레포별 배포 이력 조회 |
 | POST | /webhook/github | GitHub Webhook 수신 |
+| GET | /api/notifications | 알림 로그 조회 |
 | GET | /api/sse/connect/{targetId} | SSE 연결 |
 
----
+<br>
 
 ## GitHub Webhook 설정
 
 1. GitHub 레포 → **Settings** → **Webhooks** → **Add webhook**
-2. Payload URL: `http://서버주소/webhook/github`
+2. Payload URL: `http://서버주소:8080/webhook/github`
 3. Content type: `application/json`
 4. Events: **Just the push event** 선택
 
----
+<br>
 
 ## 연계 프로젝트
 
-알림 발송은 직접 개발한 [notification-engine](https://github.com/Ha-minsang/notification-engine) 라이브러리를 사용합니다.
+알림 발송은 직접 개발한 [notification-engine](https://github.com/Ha-minsang/notification-engine) 라이브러리를 사용합니다.  
 SSE, Email, Slack 채널을 단일 인터페이스로 통합하여 사용할 수 있습니다.
